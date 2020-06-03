@@ -2,10 +2,17 @@ import 'utils/globals'
 import path from 'path'
 import { schema } from 'config'
 import serviceLocator from 'utils/serviceLocator'
+import { MongoClient } from 'mongodb'
+import { createProxy, getMongoDBConnectionString } from 'utils/tools'
+import QueryWrapper from 'utils/dbwrapper'
 
 const seeds_folder = path.join(__dirname, '..', 'seeds')
 export default async function seedsMain() {
-  const DB = serviceLocator.get('DB')
+  const client = await MongoClient.connect(getMongoDBConnectionString(), {
+    useUnifiedTopology: true,
+    useNewUrlParser: true,
+  })
+  const DB = createProxy(new QueryWrapper(schema, client))
   const logger = serviceLocator.get('logger')
   const seed_tables = await fs.readdirAsync(seeds_folder).map((e: string) => e.replace('.json', ''))
 

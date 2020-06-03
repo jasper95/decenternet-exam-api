@@ -1,12 +1,10 @@
 [
   {
-    "name": "jasper",
     "email": "bernalesjasper@gmail.com",
-    "role_id": "5d8b7853f665910ac93f1389",
+    "role": "admin",
     "first_name": "Jasper",
     "last_name": "Bernales",
-    "role": "Admin",
-    "id": "ea7a4104-1921-41e1-bfd9-97771a344559",
+    "id": "5ed7494fcd9a3586788712c4",
     "verified": true
   }
 ]

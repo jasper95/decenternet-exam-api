@@ -2,7 +2,6 @@ import { MongoClient, ObjectID, Db } from 'mongodb'
 import { JSONSchema7 } from 'json-schema'
 import {
   TableJsonSchema,
-  Column,
   Pagination,
   Sort,
   Identifiable,
@@ -238,7 +237,13 @@ class QueryWrapper {
     const upsertData = (e: T) =>
       this.db
         .collection(table)
-        .updateOne({ _id: new ObjectID(e.id) }, { $set: objectStringToObjectID(e) }, { upsert: true })
+        .replaceOne(
+          {
+            _id: new ObjectID(e.id),
+          },
+          omit(objectStringToObjectID(e), 'id'),
+          { upsert: true },
+        )
         .then(() => e)
     if (Array.isArray(data)) {
       data = await Promise.map(data, e => validate(this._attachRecordInfo(e, true)))
@@ -249,7 +254,7 @@ class QueryWrapper {
   }
 
   async updateById<T extends Identifiable = any>(table: string, data: MaybeArray<T>, fields: string[] = []) {
-    const { schema, columns } = this._getCommonParams(table, fields)
+    const { schema } = this._getCommonParams(table, fields)
     const validate = async (e: T) => validateSchema({ data: e, schema, action: 'updateById' })
     const update = (e: T) =>
       this.db
@@ -272,7 +277,7 @@ class QueryWrapper {
   deleteById(table: string, id: string | string[]) {
     return this.db
       .collection(table)
-      .deleteMany({ _id: Array.isArray(id) ? id.map(e => new ObjectID(e)) : new ObjectID(id) })
+      .deleteMany({ _id: { $in: Array.isArray(id) ? id.map(e => new ObjectID(e)) : [new ObjectID(id)] } })
       .then(() => id)
   }
 
