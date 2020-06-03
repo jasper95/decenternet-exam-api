@@ -9,6 +9,7 @@ import { Request } from 'types'
 import { UserRole } from './decorators/RouteAccessRoles'
 import { ForbiddenError } from 'restify-errors'
 import { isSameDay, setDate, setYear, setMonth } from 'date-fns'
+import { ObjectID } from 'mongodb'
 // import { isSameDay } from 'date-fns/esm'
 
 export function generateSalt(rounds = 10): Promise<string> {
@@ -208,4 +209,12 @@ export function validateRouteRoles(roles: UserRole[], req: Request) {
     throw new ForbiddenError('Not Enough Access Rights')
   }
   return Promise.resolve()
+}
+
+export function getMongoDBConnectionString() {
+  return `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}/${process.env.DB_NAME}?retryWrites=true&w=majority`
+}
+
+export function generateUUID() {
+  return new ObjectID().toHexString()
 }

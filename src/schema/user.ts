@@ -1,58 +1,35 @@
 import { Table } from 'types'
 import { ADMIN_ROLES } from 'utils/decorators/RouteAccessRoles'
+import { transformColumnsToJsonSchema } from 'utils/dbwrapper/util'
 
 const USER_TABLE: Table = {
   table_name: 'user',
   list_roles: ADMIN_ROLES,
-  columns: [
-    {
-      column_name: 'name',
-      type: 'string',
-      required: true,
-      unique: true,
+  schema: transformColumnsToJsonSchema({
+    required: ['email', 'first_name', 'last_name', 'role'],
+    properties: {
+      email: {
+        type: 'string',
+      },
+      first_name: {
+        type: 'string',
+      },
+      last_name: {
+        type: 'string',
+      },
+      role: {
+        type: 'string',
+        enum: ['admin', 'user'],
+        default: 'admin',
+      },
     },
+  }),
+  index: [
     {
-      column_name: 'email',
-      type: 'string',
-      required: true,
-      index: true,
+      name: 'search_v1',
+      value: { first_name: 'text', last_name: 'text', email: 'text' },
     },
-    {
-      column_name: 'verified',
-      type: 'boolean',
-      default: false,
-    },
-    {
-      column_name: 'first_name',
-      type: 'string',
-      // required: true,
-      default: '',
-    },
-    {
-      column_name: 'last_name',
-      type: 'string',
-      // required: true,
-      default: '',
-    },
-    {
-      column_name: 'role',
-      type: 'string',
-      required: true,
-      default: '',
-      enum: ['Admin'],
-    },
-    {
-      column_name: 'last_login_date',
-      type: 'timestamp',
-      type_params: [{ useTz: true }],
-      is_read_only: true,
-    },
-    {
-      column_name: 'old_user_id',
-      type: 'integer',
-      default: 0,
-      // required: true,
-    },
+    { name: 'email_v1', value: { email: 1 } },
   ],
 }
 

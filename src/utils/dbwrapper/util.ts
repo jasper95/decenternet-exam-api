@@ -1,9 +1,11 @@
 import Ajv, { ErrorObject } from 'ajv'
 import omitBy from 'lodash/omitBy'
+import omit from 'lodash/omit'
 import isNil from 'lodash/isNil'
-import { Column, Table, Sort } from 'types'
+import { Table, Sort, Identifiable } from 'types'
 import { JSONSchema7 } from 'json-schema'
 import { BadRequestError } from 'restify-errors'
+import { ObjectID } from 'mongodb'
 
 export const reverse_sort_columns = ['dob']
 
@@ -12,13 +14,21 @@ function formatValidationError({ errors }: { errors: ErrorObject[] }) {
   throw new BadRequestError(`${dataPath.slice(1)} ${message}`)
 }
 
-function sanitizeData<T>(data: T, schema: JSONSchema7) {
-  const object_keys = Object.entries(schema.properties)
-    .filter(([, val]: [string, any]) => ['array', 'object'].includes(val.type))
-    .map(([key]) => key)
+export function objectIdToString<T>(data: T) {
   return Object.entries(data).reduce((acc: any, [key, val]) => {
-    acc[key] = object_keys.includes(key) ? JSON.stringify(val) : val
-    return acc
+    return {
+      ...acc,
+      [key]: val instanceof ObjectID ? val.toHexString() : val,
+    }
+  }, {})
+}
+
+export function objectStringToObjectID<T>(data: T) {
+  return Object.entries(data).reduce((acc: any, [key, val]) => {
+    return {
+      ...acc,
+      [key]: key.includes('_id') ? new ObjectID(val) : val,
+    }
   }, {})
 }
 
@@ -38,8 +48,8 @@ export async function validateSchema<T extends object>(
     ...(action === 'updateById' && { required: ['id'] }),
     ...(action === 'updateByFilter' && { required: [] }),
   })
-  const result = validate(removeNil(data)) as Promise<T>
-  return result.then((result: T) => sanitizeData(result, schema)).catch(formatValidationError)
+  const result = validate(removeNil(objectIdToString(data))) as Promise<T>
+  return result.then((result: T) => objectStringToObjectID(result)).catch(formatValidationError)
 }
 
 export function validateJsonSchema<T extends object>(
@@ -57,44 +67,24 @@ export function validateJsonSchema<T extends object>(
   return result.catch(formatValidationError)
 }
 
-function getColumnType(column: Column): JSONSchema7 {
-  const { type, schema } = column
-  if (type === 'uuid') {
-    return { type: 'string', format: 'uuid' }
-  }
-  if (type === 'decimal') {
-    return { type: 'number' }
-  }
-  if (type === 'text') {
-    return { type: 'string' }
-  }
-  if (['datetime', 'timestamp'].includes(type)) {
-    return {
-      type: 'string',
-      format: 'date-time',
-    }
-  }
-  if (type === 'jsonb') {
-    return (
-      schema || {
-        type: 'object',
-        properties: {},
-      }
-    )
-  }
-  return {
-    type,
-  } as JSONSchema7
+export function attachId<T extends Identifiable>(data: T) {
+  return data
+    ? omit(
+        {
+          ...data,
+          ...(data._id && { id: data._id }),
+        },
+        '_id',
+      )
+    : data
 }
-
-export function transformColumnsToJsonSchema(columns: Column[]): JSONSchema7 {
-  const initial: JSONSchema7 = {
+export function transformColumnsToJsonSchema(schema: JSONSchema7): JSONSchema7 {
+  return {
     type: 'object',
-    required: [],
+    required: schema.required || [],
     properties: {
       id: {
         type: 'string',
-        format: 'uuid',
       },
       created_date: {
         type: 'string',
@@ -106,30 +96,12 @@ export function transformColumnsToJsonSchema(columns: Column[]): JSONSchema7 {
       },
       status: {
         type: 'string',
+        default: 'Active',
+        enum: ['active', 'inactive'],
       },
+      ...schema.properties,
     },
   }
-  return columns.reduce((acc, column) => {
-    const { required, column_name, enum: enums, is_read_only } = column
-    let { default: default_to } = column
-    if (required) {
-      acc.required.push(column_name)
-    }
-    acc.properties[column_name] = getColumnType(column)
-    if (enums) {
-      Object.assign(acc.properties[column_name], { enum: enums })
-    }
-    if (is_read_only !== undefined) {
-      Object.assign(acc.properties[column_name], { readOnly: is_read_only })
-    }
-    if (default_to !== undefined) {
-      if (default_to === '{}' || default_to === '[]') {
-        default_to = JSON.parse(default_to)
-      }
-      Object.assign(acc.properties[column_name], { default: default_to })
-    }
-    return acc
-  }, initial)
 }
 
 export function sortTables(tables: Table[]): Table[] {

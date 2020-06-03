@@ -5,10 +5,14 @@ export interface LoginSchema {
 }
 
 export interface SignupSchema {
+  id?: string
+  created_date?: string
+  updated_date?: string
+  status?: 'active' | 'inactive'
   email: string
-  password: string
+  first_name: string
   last_name: string
-  role: 'Admin'
+  role: 'admin' | 'user'
   [k: string]: any | undefined
 }
 
@@ -23,5 +27,7 @@ export interface ResetPasswordSchema {
   [k: string]: any | undefined
 }
 
-
-
+export interface VerifyAccountSchema {
+  token: string
+  [k: string]: any | undefined
+}

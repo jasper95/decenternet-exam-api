@@ -25,23 +25,25 @@ export default function initializeControllers(self: InitializerContext) {
     logger.info('%s - %s [Params: %s]', class_name, prototype, util.inspect(omit(req.params, omit_params), false, null))
     const validation = validator ? validateJsonSchema(req.params, validator) : Promise.resolve()
     const route_roles = access_roles[prototype] || USER_ROLES
-    return validation
-      .then(() => validateRouteRoles(route_roles, req))
-      .then(() => targetValue.apply(target, args))
-      .then((response: any) => {
-        // return nothing for stream response
-        if (response !== undefined) {
-          res.send(200, response)
-        }
-      })
-      .catch((err: Error) => {
-        if (err instanceof HttpError) {
-          logger.warn('%s - %s [Error: %s]', class_name, prototype, err.message)
-          return res.send(err)
-        }
-        logger.error('%s - %s [Error: %s]', class_name, prototype, util.inspect(err))
-        return res.send(500, { code: 'InternalServer', message: util.inspect(err) })
-      })
+    return (
+      validation
+        // .then(() => validateRouteRoles(route_roles, req))
+        .then(() => targetValue.apply(target, args))
+        .then((response: any) => {
+          // return nothing for stream response
+          if (response !== undefined) {
+            res.send(200, response)
+          }
+        })
+        .catch((err: Error) => {
+          if (err instanceof HttpError) {
+            logger.warn('%s - %s [Error: %s]', class_name, prototype, err.message)
+            return res.send(err)
+          }
+          logger.error('%s - %s [Error: %s]', class_name, prototype, util.inspect(err))
+          return res.send(500, { code: 'InternalServer', message: util.inspect(err) })
+        })
+    )
   }
 
   const { server } = self

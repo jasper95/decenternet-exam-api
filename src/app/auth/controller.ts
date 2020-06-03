@@ -5,10 +5,16 @@ import { Request, AuthSession, UserAuth, User, Response, Token } from 'types'
 import { Controller } from 'utils/decorators/Controller'
 import { Get, Post, Put } from 'utils/decorators/Routes'
 import Validator from 'utils/decorators/Validator'
-import { LoginValidator, ForgotPasswordValidator, ResetPasswordValidator } from './validator'
+import {
+  LoginValidator,
+  ForgotPasswordValidator,
+  ResetPasswordValidator,
+  SignupValidator,
+  VerifyAccountValidator,
+} from './validator'
 import { BadRequestError, UnauthorizedError } from 'restify-errors'
 import { QueryBuilder } from 'knex'
-import { LoginSchema, ForgotPasswordSchema } from 'types'
+import { LoginSchema, ForgotPasswordSchema, VerifyAccountSchema } from 'types'
 import { isAfter } from 'date-fns'
 import bcrypt from 'bcrypt'
 import dayjs from 'dayjs'
@@ -55,8 +61,7 @@ export default class UserController extends AppService {
   @Validator(LoginValidator)
   async login({ params }: Request<LoginSchema>, res: Response) {
     const { email, password } = params
-    const filter = (query: QueryBuilder) => query.where({ email })
-    const [user] = await this.DB.filter<User>('user', filter)
+    const user = await this.DB.find<User>('user', email, [], 'email')
     if (!user) {
       throw new BadRequestError('Invalid username or password')
     }
@@ -81,6 +86,41 @@ export default class UserController extends AppService {
       maxAge: 60 * 60 * 24 * 7,
       path: '/',
     })
+    return user
+  }
+
+  @Post('/signup', { schema: SignupValidator, summary: 'Signup for an account' })
+  @Validator(SignupValidator)
+  async signup({ params, headers }: Request) {
+    // validate email
+    const user_exists = await this.DB.find('user', params.email, [], 'email')
+    if (user_exists) {
+      throw new BadRequestError('Email already taken')
+    }
+    const user = await this.DB.insert('user', params)
+    const sendgrid = this.serviceLocator.get('sendgrid')
+    const { first_name: name } = params
+    const token = await this.Model.auth.generateToken({
+      payload: {
+        user_id: user.id,
+      },
+      type: 'activate',
+      has_expiry: false,
+    })
+    const html = await formatTemplate('activate', {
+      confirm_link: `${getPortaLink(headers)}/activate?token=${token}`,
+      name,
+    })
+    await sendgrid.send({
+      from: {
+        name: 'CENVI',
+        email: process.env.EMAIL_FROM,
+      },
+      to: user.email,
+      subject: 'Verify CENVI Account',
+      html,
+    })
+
     return user
   }
 
@@ -148,5 +188,21 @@ export default class UserController extends AppService {
     const response = await this.DB.deleteById('auth_session', session.id)
     res.clearCookie('access_token', { path: '/' })
     return response
+  }
+
+  @Put('/verify-account', { summary: 'Verify user account', schema: VerifyAccountValidator })
+  @Validator(VerifyAccountValidator)
+  async verifyAccount({ params }: Request<VerifyAccountSchema>) {
+    const { token } = params
+    const { user_id, id } = jwt.verify(token, process.env.AUTH_SECRET) as AuthSession
+    const salt = await generateSalt()
+    const password = await generateHash(params.password, salt)
+    await this.DB.insert('user_auth', { password, salt, user_id })
+    await Promise.all([
+      this.DB.insert('user_auth', { password, salt, user_id }),
+      this.DB.updateById('user', { id: user_id, verified: true }),
+      this.DB.updateById('token', { id, used: true }),
+    ])
+    return { success: true }
   }
 }

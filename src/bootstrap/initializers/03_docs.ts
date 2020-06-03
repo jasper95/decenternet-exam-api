@@ -1,7 +1,6 @@
 import { InitializerContext } from 'types'
 import schema from 'schema'
 import { flow, upperFirst, camelCase } from 'lodash'
-import { transformColumnsToJsonSchema } from 'utils/dbwrapper/util'
 import * as swaggerMiddleware from 'middlewares/swagger'
 import { swagger as swaggerConfig } from 'config'
 import deepmerge from 'deepmerge'
@@ -17,7 +16,7 @@ export default async function initializeDocs(self: InitializerContext) {
       const key = flow(camelCase, upperFirst)(table.table_name)
       return {
         ...acc,
-        [key]: transformColumnsToJsonSchema(table.columns),
+        [key]: table.schema,
       }
     }, {})
   const paths = Object.keys(self.api_docs).reduce((acc, tag) => {

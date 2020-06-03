@@ -1,4 +1,5 @@
 import { JSONSchema7 } from 'json-schema'
+import USER_TABLE from 'schema/user'
 
 export const LoginValidator: JSONSchema7 = {
   type: 'object',
@@ -17,22 +18,7 @@ export const LoginValidator: JSONSchema7 = {
 export const SignupValidator: JSONSchema7 = {
   type: 'object',
   title: 'SignupSchema',
-  required: ['email', 'first_name', 'last_name', 'role', 'password'],
-  properties: {
-    email: {
-      type: 'string',
-    },
-    password: {
-      type: 'string',
-    },
-    last_name: {
-      type: 'string',
-    },
-    role: {
-      type: 'string',
-      enum: ['Admin'],
-    },
-  },
+  ...USER_TABLE.schema,
 }
 
 export const ForgotPasswordValidator: JSONSchema7 = {
@@ -59,9 +45,22 @@ export const ResetPasswordValidator: JSONSchema7 = {
     },
   },
 }
+
+export const VerifyAccountValidator: JSONSchema7 = {
+  type: 'object',
+  title: 'VerifyAccountSchema',
+  required: ['token'],
+  properties: {
+    token: {
+      type: 'string',
+    },
+  },
+}
+
 export default {
   LoginValidator,
   SignupValidator,
   ForgotPasswordValidator,
   ResetPasswordValidator,
+  VerifyAccountValidator,
 }

@@ -41,7 +41,7 @@ export default async function authMiddleware(req: Request, res: Response, next: 
     try {
       const { id, user_id } = jwt.verify(token, process.env.AUTH_SECRET) as AuthSession
       const [session, user] = await Promise.all([DB.find('auth_session', id), DB.find('user', user_id)])
-      if (!session || session.status !== 'Active') {
+      if (!session) {
         error = 'Invalid token'
         invalid_token = true
       } else if (session) {

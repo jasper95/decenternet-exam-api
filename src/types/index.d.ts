@@ -12,6 +12,7 @@ import { JSONSchema7 } from 'json-schema'
 import { BlobService } from 'azure-storage'
 import { UserRole } from 'utils/decorators/RouteAccessRoles'
 import { SwaggerParams } from 'utils/decorators/Routes'
+import { MongoClient } from 'mongodb'
 export * from './generated/models'
 export * from './generated/validators'
 
@@ -75,22 +76,17 @@ export interface Response extends RestifyResponse {
 
 export interface ServiceLocator {
   services: {
-    DB: QueryWrapper
-    knex: Knex
+    DB?: QueryWrapper
+    db_client?: MongoClient
     logger: Logger
-    sendgrid: typeof MailService
     Model?: ModelService
-    s3: S3Client
-    azure: BlobService
   }
   registerService(name: string, service: object): void
   get(name: 'DB'): QueryWrapper
-  get(name: 'azure'): BlobService
-  get(name: 'knex'): Knex
+  get(name: 'db_client'): MongoClient
   get(name: 'sendgrid'): typeof MailService
   get(name: 'logger'): Logger
   get(name: 'Model'): ModelService
-  get(name: 's3'): S3Client
 }
 
 export interface ModelService {
@@ -133,12 +129,19 @@ export interface Column {
   is_read_only?: boolean
 }
 
+export interface TableIndex {
+  name: string
+  value: object | string
+}
+
 export interface Table {
   table_name: string
   list_roles: UserRole[]
-  allowed_fields?: RoleFields
-  slug?: boolean
-  columns: Column[]
+  schema: JSONSchema7
+  index?: TableIndex[]
+  // allowed_fields?: RoleFields
+  // slug?: boolean
+  // columns: Column[]
 }
 
 export interface DatabaseSchema {
@@ -212,6 +215,7 @@ export interface FilterOptions {
 
 export interface Identifiable {
   id?: string
+  _id?: string
 }
 
 export type RoleFields = {

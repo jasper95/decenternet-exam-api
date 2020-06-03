@@ -1,25 +1,26 @@
 import { Table } from 'types'
+import { transformColumnsToJsonSchema } from 'utils/dbwrapper/util'
 
 const TOKEN_TABLE: Table = {
   table_name: 'token',
   list_roles: [],
-  columns: [
-    {
-      column_name: 'type',
-      type: 'string',
-      required: true,
+  schema: transformColumnsToJsonSchema({
+    required: ['type'],
+    properties: {
+      type: {
+        type: 'string',
+      },
+      expiry: {
+        type: 'string',
+        format: 'date-time',
+      },
+      used: {
+        type: 'boolean',
+        default: false,
+      },
     },
-    {
-      column_name: 'expiry',
-      type: 'timestamp',
-      type_params: [{ useTz: true }],
-    },
-    {
-      column_name: 'used',
-      type: 'boolean',
-      default: false,
-    },
-  ],
+  }),
+  index: [{ name: 'type_v1', value: { type: 1 } }],
 }
 
 export default TOKEN_TABLE

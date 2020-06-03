@@ -1,26 +1,23 @@
 import { Table } from 'types'
+import { transformColumnsToJsonSchema } from 'utils/dbwrapper/util'
 
 const AUTH_SESSION_TABLE: Table = {
   table_name: 'auth_session',
   list_roles: [],
-  columns: [
-    {
-      column_name: 'user_id',
-      type: 'uuid',
-      foreign_key: true,
-      required: true,
-      reference_table: 'user',
-      reference_column: 'id',
-      on_update: 'CASCADE',
-      on_delete: 'CASCADE',
+  schema: transformColumnsToJsonSchema({
+    required: ['user_id'],
+    properties: {
+      user_id: {
+        type: 'string',
+      },
+      device_type: {
+        type: 'string',
+        enum: ['Web', 'Mobile'],
+        default: 'Mobile',
+      },
     },
-    {
-      column_name: 'device_type',
-      type: 'string',
-      default: 'Web',
-      required: true,
-    },
-  ],
+  }),
+  index: [{ name: 'user_v1', value: { user_id: 1 } }],
 }
 
 export default AUTH_SESSION_TABLE

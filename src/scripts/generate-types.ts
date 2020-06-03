@@ -46,7 +46,7 @@ async function generateValidators() {
 
 async function generateModels() {
   const models = await Promise.map(schema, async table => {
-    const schema = (transformColumnsToJsonSchema(table.columns) as unknown) as JSONSchema4
+    const schema = (transformColumnsToJsonSchema(table.schema) as unknown) as JSONSchema4
     const ts = await compile(schema, table.table_name, options)
     return ts
   })
