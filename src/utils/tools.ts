@@ -10,8 +10,20 @@ import { UserRole } from './decorators/RouteAccessRoles'
 import { ForbiddenError } from 'restify-errors'
 import { isSameDay, setDate, setYear, setMonth } from 'date-fns'
 import { ObjectID } from 'mongodb'
-// import { isSameDay } from 'date-fns/esm'
+import axios from 'axios'
 
+const jsonPlaceholderClient = axios.create({
+  baseURL: 'https://jsonplaceholder.typicode.com',
+})
+jsonPlaceholderClient.interceptors.request.use(
+  config => {
+    return config
+  },
+  err => Promise.reject(err),
+)
+jsonPlaceholderClient.interceptors.response.use(response => response.data, Promise.reject)
+
+export { jsonPlaceholderClient }
 export function generateSalt(rounds = 10): Promise<string> {
   return new Promise((resolve, reject) => {
     bcrypt.genSalt(rounds, (err, res) => {

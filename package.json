@@ -25,10 +25,12 @@
   "license": "ISC",
   "dependencies": {
     "@sendgrid/mail": "^6.3.1",
+    "@types/axios": "^0.14.0",
     "@types/mongodb": "^3.5.20",
     "ajv": "^6.10.2",
     "ajv-bsontype": "^1.0.7",
     "aws-sdk": "^2.568.0",
+    "axios": "^0.19.2",
     "azure-storage": "^2.10.3",
     "bcrypt": "^3.0.7",
     "bluebird": "^3.5.1",
