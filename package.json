@@ -27,7 +27,7 @@
     "@sendgrid/mail": "^6.3.1",
     "@types/axios": "^0.14.0",
     "@types/mongodb": "^3.5.20",
-    "ajv": "^6.10.2",
+    "ajv": "^6.12.3",
     "ajv-bsontype": "^1.0.7",
     "aws-sdk": "^2.568.0",
     "axios": "^0.19.2",
